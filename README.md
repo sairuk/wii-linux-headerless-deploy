@@ -2,6 +2,7 @@
 mucking around with linux on a nuber of old wii's to boot them headerless with ssh up, this repo contains that configuration
 
 ## some notes
+ - you need a modified wii
  - rootfs is hardcoded in p1/gumboot/zImage.ngx to p2, can use baedit to modifiy this according to project repo
  - the archive.debian repos are added as [trusted=yes], their gpgkeys are expired and haven't been renewed so can't be updated
  - re-enabled root pass login over ssh on initial deploy, you should create a nonpriv user and disable this later on.
