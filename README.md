@@ -95,7 +95,7 @@ thats it, a bit of fun.
 
 # modify the image to move the root partition to the end of the disk
 
-(theory only) this process is untested to boot on the wii
+(theory only) this process is untested to boot on the wii. if you follow this process you'll need to fix the fstab once it's copied over as part of the above process.
 
 ## Starting image
 ```
