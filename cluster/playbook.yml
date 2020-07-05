@@ -1,0 +1,43 @@
+---
+- name: Install console cluster base
+  hosts: all
+  become: yes
+  
+  tasks:
+    - name: Upgrade System
+      apt:
+        upgrade: safe
+        
+    - name: Install vim
+      apt:
+        name: vim
+        state: present
+        
+    - name: Install nginx light
+      apt:
+        name: nginx-light
+        state: present
+
+    - name: Start nginx
+      service: 
+        name: nginx
+        state: started
+        enabled: yes
+
+- name: Set hostname
+  hosts: wii_node1
+  become: yes
+
+  tasks:
+    - name: Setup Hostname
+      hostname:
+        name: wii-linux-ngx-node1
+
+- name: Set hostname
+  hosts: wii_node2
+  become: yes
+
+  tasks:
+    - name: Setup Hostname
+      hostname:
+        name: wii-linux-ngx-node2

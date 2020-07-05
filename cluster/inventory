@@ -1,0 +1,9 @@
+[wii_node1]
+192.168.0.124
+
+[wii_node2]
+192.168.0.119
+
+[multi:children]
+wii_node1
+wii_node2
