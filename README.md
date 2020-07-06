@@ -136,7 +136,7 @@ Number  Start     End       Size     Type     File system  Flags
         1554432s  1638399s  83968s            Free Space
 ```
 
-## Start moving data around since move and cp were removed from parted 3.2
+### Start moving data around since move and cp were removed from parted 3.2
 * Create loop devices for each partition
 ```
 sudo losetup -o $((2048*512)) /dev/loop1001 wii-jessie-sd.img 
@@ -174,7 +174,7 @@ sudo sed -i 's/mmcblk0p2/mmcblk0p3/' /mnt/tmp/wiilxp3/etc/fstab
 * Destroy the loop devices that are no longer needed
 ```sudo losetup -d /dev/loop100{1,2,3}```
 
-## Final image layout
+### Final image layout
 ```
 $ parted -s -a optimal -- wii-jessie-sd.img unit s print free
 Model:  (file)
