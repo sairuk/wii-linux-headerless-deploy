@@ -13,7 +13,7 @@ mucking around with linux on a nuber of old wii's to boot them headerless with s
  - https://neagix.github.io/wii-linux-ngx/
  - https://github.com/neagix/wii-linux-ngx/releases
 
-### On a linux machine
+### On a machine
 1. download the image
 ``` curl -oL wii-jessie-sd.img.xz https://github.com/neagix/wii-linux-ngx/releases/download/0.3.6/wii-jessie-sd.img.xz ```
 1. unpack the images
@@ -22,11 +22,11 @@ mucking around with linux on a nuber of old wii's to boot them headerless with s
 ``` $ dd if=wii-jessie-sd.img of=<sdcard device> bs=1M ```
 1. expand the second partition and add a 3rd for swap (this is for a 4G card, my sdcard device was /dev/sdf)
 ```
-$ /sbin/parted -s -a optimal -- <sdcard device> unit MB rm 2 mkpart primary ext3 43 3700 2
-$ /sbin/parted -s -a optimal -- <sdcard device> unit MB mkpart primary linux-swap 3700 -1 3
-$ /sbin/e2fsck -f <sdcard device>2
-$ /sbin/resize2fs <sdcard device>2 
-$ /sbin/mkswap <sdcard device>3
+$ parted -s -a optimal -- <sdcard device> unit MB rm 2 mkpart primary ext3 43 3700 2
+$ parted -s -a optimal -- <sdcard device> unit MB mkpart primary linux-swap 3700 -1 3
+$ e2fsck -f <sdcard device>2
+$ resize2fs <sdcard device>2 
+$ mkswap <sdcard device>3
 ```
 
 ### Update the configuration before copying on the sdcard
@@ -95,98 +95,107 @@ thats it, a bit of fun.
 
 # modify the image to move the root partition to the end of the disk
 
-(theory only) this process is untested to boot on the wii. if you follow this process you'll need to fix the fstab once it's copied over as part of the above process.
+~~(theory only) this process is untested to boot on the wii.~~ this now works but note  if you follow this process you'll need to fix the fstab once it's copied over as part of the above process.
 
 ## Starting image
 ```
-~$ parted -s -a optimal --  wii-jessie-sd.img unit s print free
+# parted -s -a optimal --  wii-jessie-sd.img unit B print free
 Model:  (file)
-Disk /home/sairuk/wii-jessie-sd.img: 819200s
+Disk /home/user/wii-jessie-sd.img: 419430400B
 Sector size (logical/physical): 512B/512B
 Partition Table: msdos
 Disk Flags: 
 
-Number  Start   End      Size     Type     File system  Flags
-        63s     2047s    1985s             Free Space
- 1      2048s   83967s   81920s   primary  fat32
- 2      83968s  819199s  735232s  primary  ext3
+Number  Start      End         Size        Type     File system  Flags
+        32256B     1048575B    1016320B             Free Space
+ 1      1048576B   42991615B   41943040B   primary  fat32
+ 2      42991616B  419430399B  376438784B  primary  ext3
 ```
 
 ## Add free space to the end of the image
 * Add the free space
-``` dd if=/dev/zero bs=1M count=700 >> wii-jessie-sd.img ```
+```# dd if=/dev/zero bs=512 count=819200 >> wii-jessie-sd.img ```
 * Create a partition
-``` parted -s -a optimal -- wii-jessie-sd.img unit MB mkpart primary ext3 419 $((419+376+1)) ```
+```# parted -s -a optimal -- wii-jessie-sd.img unit B mkpart primary ext3 419430400 795869183 ```
 
 
 ## New disk image layout
 ```
-$ parted -s -a optimal -- wii-jessie-sd.img unit s print free
+# parted -s -a optimal -- wii-jessie-sd.img unit B print free
 Model:  (file)
-Disk /home/sairuk/wii-jessie-sd.img: 1638400s
+Disk /home/user/wii-jessie-sd.img: 838860800B
 Sector size (logical/physical): 512B/512B
 Partition Table: msdos
 Disk Flags: 
 
-Number  Start     End       Size     Type     File system  Flags
-        63s       2047s     1985s             Free Space
- 1      2048s     83967s    81920s   primary  fat32
- 2      83968s    819199s   735232s  primary  ext3
- 3      819200s   1554431s  735232s  primary
-        1554432s  1638399s  83968s            Free Space
+Number  Start       End         Size        Type     File system     Flags
+        32256B      1048575B    1016320B             Free Space
+ 1      1048576B    42991615B   41943040B   primary  fat32
+ 2      42991616B   419430399B  376438784B  primary  linux-swap(v1)
+ 3      419430400B  795869183B  376438784B  primary  
+        795869184B  838860799B  42991616B            Free Space
 ```
 
 ### Start moving data around since move and cp were removed from parted 3.2
 * Create loop devices for each partition
 ```
-sudo losetup -o $((2048*512)) /dev/loop1001 wii-jessie-sd.img 
-sudo losetup -o $((83968*512)) /dev/loop1002 wii-jessie-sd.img 
-sudo losetup -o $((819200*512)) /dev/loop1003 wii-jessie-sd.img 
+# losetup -o 1048576   --sizelimit 42991615  /dev/loop1001 wii-jessie-sd.img
+# losetup -o 42991616  --sizelimit 419430399 /dev/loop1002 wii-jessie-sd.img
+# losetup -o 419430400 --sizelimit 795869183 /dev/loop1003 wii-jessie-sd.im
+
 ```
-* Make an ext3 file system on the new partition
-``` sudo mkfs.ext3 /dev/loop1003 ```
 * Make the mount point dirs
-``` sudo mkdir -p /mnt/tmp/wiilxp{1,2,3} ```
+```# mkdir -p /mnt/tmp/wiilxp{1,2,3} ```
 * Mount the loops devices for access
 ``` 
-sudo mount /dev/loop1001 /mnt/tmp/wiilxp1
-sudo mount /dev/loop1002 /mnt/tmp/wiilxp2
-sudo mount /dev/loop1003 /mnt/tmp/wiilxp3
+# mount /dev/loop1001 /mnt/tmp/wiilxp1
+# mount /dev/loop1002 /mnt/tmp/wiilxp2
+# mount /dev/loop1003 /mnt/tmp/wiilxp3
 ```
-* rsync the data from the old root to new
-```sudo rsync -avzP /mnt/tmp/wiilxp2/* /mnt/tmp/wiilxp3/```
+* clone partition 2 to partition 3
+```# dd if=/dev/loop1002 of=/dev/loop1003 bs=1M ```
 * Make working copy of the kernel before we modify it
 ```
-sudo cp /mnt/tmp/wiilxp1/gumboot/zImage.ngx /mnt/tmp/wiilxp1/gumboot/zImagep2.ngx
+# cp /mnt/tmp/wiilxp1/gumboot/zImage.ngx /mnt/tmp/wiilxp1/gumboot/zImagep2.ngx
 ```
 * Start to modify the known references to the old root partition and point it to the new one
 ```
-sudo sed -i 's/mmcblk0p2/mmcblk0p3/' /mnt/tmp/wiilxp1/gumboot/zImagep2.ngx
-sudo sed -i 's/zImage/zImagep2/' /mnt/tmp/wiilxp1/gumboot/gumboot.lst
-sudo sed -i 's/mmcblk0p2/mmcblk0p3/' /mnt/tmp/wiilxp3/etc/fstab
+# sed -i 's/mmcblk0p2/mmcblk0p3/' /mnt/tmp/wiilxp1/gumboot/zImagep2.ngx
+# sed -i 's/zImage/zImagep2/' /mnt/tmp/wiilxp1/gumboot/gumboot.lst
+# sed -i 's/mmcblk0p2/mmcblk0p3/' /mnt/tmp/wiilxp3/etc/fstab
 ```
 * Add the new swap partition to fstab
-```sudo echo '/dev/mmcblk0p3  swap   swap   defaults	                                        0 0' >> /mnt/tmp/wiilxp3/etc/fstab```
+```# echo '/dev/mmcblk0p3  swap   swap   defaults	                                        0 0' | tee -a /mnt/tmp/wiilxp3/etc/fstab```
 * Unmount all the partition mounts
-```sudo umount /mnt/tmp/wiilxp*```
+```# umount /mnt/tmp/wiilxp*```
 * Convert the second partition to swap
-```sudo mkswap /dev/loop1002```
+```# mkswap /dev/loop1002```
 * Destroy the loop devices that are no longer needed
-```sudo losetup -d /dev/loop100{1,2,3}```
+```# losetup -d /dev/loop100{1,2,3}```
 
 ### Final image layout
 ```
-$ parted -s -a optimal -- wii-jessie-sd.img unit s print free
+$ parted -s -a optimal --  wii-jessie-sd.img unit B print free
 Model:  (file)
-Disk /home/sairuk/wii-jessie-sd.img: 1638400s
+Disk /home/user/wii-jessie-sd.img: 838860800B
 Sector size (logical/physical): 512B/512B
 Partition Table: msdos
 Disk Flags: 
 
-Number  Start     End       Size     Type     File system     Flags
-        63s       2047s     1985s             Free Space
- 1      2048s     83967s    81920s   primary  fat32
- 2      83968s    819199s   735232s  primary  linux-swap(v1)
- 3      819200s   1554431s  735232s  primary  ext3
-        1554432s  1638399s  83968s            Free Space
+Number  Start       End         Size        Type     File system     Flags
+        32256B      1048575B    1016320B             Free Space
+ 1      1048576B    42991615B   41943040B   primary  fat32
+ 2      42991616B   419430399B  376438784B  primary  linux-swap(v1)
+ 3      419430400B  795869183B  376438784B  primary  ext3
+        795869184B  838860799B  42991616B            Free Space
 ```
+
+### Resizing the root paritition to use the remaining space
+Use MB units so we cant use -1 to fill remaming space
+```
+# parted -s -a optimal -- <sdcard device> unit MB rm 3 mkpart primary ext3 419 -1 3
+# e2fsck -f <sdcard device>3
+# resize2fs <sdcard device>3 
+```
+
+
