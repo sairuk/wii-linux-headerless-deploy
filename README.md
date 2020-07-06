@@ -141,7 +141,7 @@ Number  Start       End         Size        Type     File system     Flags
 ```
 # losetup -o 1048576   --sizelimit 42991615  /dev/loop1001 wii-jessie-sd.img
 # losetup -o 42991616  --sizelimit 419430399 /dev/loop1002 wii-jessie-sd.img
-# losetup -o 419430400 --sizelimit 795869183 /dev/loop1003 wii-jessie-sd.im
+# losetup -o 419430400 --sizelimit 795869183 /dev/loop1003 wii-jessie-sd.img
 
 ```
 * Make the mount point dirs
