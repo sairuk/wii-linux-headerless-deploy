@@ -8,6 +8,7 @@ mucking around with linux on a nuber of old wii's to boot them headerless with s
  - re-enabled root pass login over ssh on initial deploy, you should create a nonpriv user and disable this later on.
  - wireless will try to come up on boot configured for dhcp
  - root passwd as per main project
+ - priiloader autoboot to bootmii ios works perfectly well for this
 
 ## using 
  - https://neagix.github.io/wii-linux-ngx/
@@ -56,9 +57,9 @@ a basic playbook to make some changes to the wii's is included in the cluster fo
 ### create a nonpriv user to work with
 (optional) you can do all this stuff as root if you really want
 1. create a nonpriv user wii
-``` useradd -m -s /bin/bash wii ```
+``` # useradd -m -s /bin/bash wii ```
 1. create a password for the user
-``` passwd wii ```
+``` # passwd wii ```
 1. install the sudo package
 ```
 # apt-get update
@@ -66,7 +67,7 @@ a basic playbook to make some changes to the wii's is included in the cluster fo
 ```
 1. create a sudoers file for the user in ```/etc/sudoers.d/01-wii```
 ```
-echo "wii	ALL=(ALL:ALL) NOPASSWD:ALL" > /etc/sudoers/01-wii
+# echo "wii	ALL=(ALL:ALL) NOPASSWD:ALL" > /etc/sudoers/01-wii
 ```
 
 ### On a machine
@@ -87,7 +88,7 @@ thats it, a bit of fun.
 
 # the maybe pile
  - find something useful to do with this.
- - move root partition to p3 so it can be resized for whatever sd card
+ - ~~move root partition to p3 so it can be resized for whatever sd card~~
  - automate/script some of these sd operations
 
 
@@ -95,7 +96,7 @@ thats it, a bit of fun.
 
 # modify the image to move the root partition to the end of the disk
 
-~~(theory only) this process is untested to boot on the wii.~~ this now works but note  if you follow this process you'll need to fix the fstab once it's copied over as part of the above process.
+~~(theory only) this process is untested to boot on the wii.~~ this now works but note if you follow this process you'll need to fix the fstab once it's copied over as part of the above process.
 
 ## Starting image
 ```
@@ -144,7 +145,7 @@ Number  Start       End         Size        Type     File system     Flags
 # losetup -o 419430400 --sizelimit 795869183 /dev/loop1003 wii-jessie-sd.img
 
 ```
-* Make the mount point dirs
+* Make the mount points
 ```# mkdir -p /mnt/tmp/wiilxp{1,2,3} ```
 * Mount the loops devices for access
 ``` 
@@ -152,7 +153,7 @@ Number  Start       End         Size        Type     File system     Flags
 # mount /dev/loop1002 /mnt/tmp/wiilxp2
 # mount /dev/loop1003 /mnt/tmp/wiilxp3
 ```
-* clone partition 2 to partition 3
+* Clone partition 2 to partition 3
 ```# dd if=/dev/loop1002 of=/dev/loop1003 bs=1M ```
 * Make working copy of the kernel before we modify it
 ```
@@ -166,11 +167,11 @@ Number  Start       End         Size        Type     File system     Flags
 ```
 * Add the new swap partition to fstab
 ```# echo '/dev/mmcblk0p3  swap   swap   defaults	                                        0 0' | tee -a /mnt/tmp/wiilxp3/etc/fstab```
-* Unmount all the partition mounts
+* Unmount all partitions
 ```# umount /mnt/tmp/wiilxp*```
 * Convert the second partition to swap
 ```# mkswap /dev/loop1002```
-* Destroy the loop devices that are no longer needed
+* Destroy the loop devices
 ```# losetup -d /dev/loop100{1,2,3}```
 
 ### Final image layout
@@ -191,7 +192,7 @@ Number  Start       End         Size        Type     File system     Flags
 ```
 
 ### Resizing the root paritition to use the remaining space
-Use MB units so we cant use -1 to fill remaming space
+Use MB units so we can use -1 to fill remaiming space
 ```
 # parted -s -a optimal -- <sdcard device> unit MB rm 3 mkpart primary ext3 419 -1 3
 # e2fsck -f <sdcard device>3
