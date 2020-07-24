@@ -29,6 +29,6 @@ skill set
 
 
 All things considered you should also be able to review my subs to the wuprop 
-project [here] (https://wuprop.boinc-af.org/hosts_user.php?userid=134073)
+project [here](https://wuprop.boinc-af.org/hosts_user.php?userid=134073)
 
 sairuk
