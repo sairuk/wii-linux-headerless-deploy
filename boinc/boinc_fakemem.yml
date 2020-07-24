@@ -1,0 +1,70 @@
+---
+- name: Fake memory for boinc
+  hosts: wiis
+  gather_facts: false
+  become: true
+
+  vars_files:
+    vars/boinc_vars.yml
+
+  tasks:
+    - name: Check project state for this host
+      command:
+        argv:
+          - /usr/bin/sudo
+          - -u
+          - boinc
+          - /usr/bin/boinccmd
+          - --get_project_status
+      register: project_status
+      changed_when: false
+
+    - name: create fake_meminfo
+      copy:
+        dest: /etc/fake_meminfo
+        content: |
+          MemTotal:         128148 kB
+          MemFree:           76008 kB
+          MemAvailable:     108368 kB
+          Buffers:            8544 kB
+          Cached:            45064 kB
+          SwapCached:         1076 kB
+          Active:            40196 kB
+          Inactive:          17464 kB
+          Active(anon):       1384 kB
+          Inactive(anon):     2688 kB
+          Active(file):      38812 kB
+          Inactive(file):    14776 kB
+          Unevictable:           0 kB
+          Mlocked:               0 kB
+          SwapTotal:        255996 kB
+          SwapFree:         244356 kB
+          Dirty:                72 kB
+          Writeback:             0 kB
+          AnonPages:          3584 kB
+          Mapped:            11400 kB
+          Shmem:                20 kB
+          Slab:                  0 kB
+          SReclaimable:          0 kB
+          SUnreclaim:            0 kB
+          KernelStack:         480 kB
+          PageTables:          584 kB
+          NFS_Unstable:          0 kB
+          Bounce:                0 kB
+          WritebackTmp:          0 kB
+          CommitLimit:      293568 kB
+          Committed_AS:      75508 kB
+          VmallocTotal:     686064 kB
+          VmallocUsed:        6284 kB
+          VmallocChunk:     659596 kB
+
+
+
+    - name: Mount bind fake meminfo
+      mount:
+        path: /proc/meminfo
+        src: /etc/fake_meminfo
+        opts: bind
+        state: mounted
+        fstype: none
+      when: boinc_project_url in project_status.stdout

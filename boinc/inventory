@@ -1,0 +1,8 @@
+[wiis]
+wii-linux-ngx-node1.mameau.com
+wii-linux-ngx-node2.mameau.com
+wii-linux-ngx-node3.mameau.com
+wii-linux-ngx-node4.mameau.com
+
+[wiis:vars]
+ansible_user=ansible

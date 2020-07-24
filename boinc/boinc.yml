@@ -1,0 +1,69 @@
+---
+- name: Install and configure boinc client
+  hosts: wiis
+  gather_facts: false
+  become: true
+
+  vars_files:
+    - vars/boinc_vars.yml
+
+  handlers:
+    - name: restart boinc-client
+      service:
+        name: boinc-client
+        state: restarted
+
+  tasks:
+    - name: Install BOINC client
+      apt:
+        name: boinc-client
+        state: present
+
+    - name: Enable the BOINC client
+      service:
+        name: boinc-client
+        state: started
+
+    - name: Update BOINC default options
+      lineinfile:
+        line: 'BOINC_OPTS=""'
+        create: true
+        regexp: '^BOINC_OPTS'
+        dest: "/etc/default/boinc-client"
+      notify: restart boinc-client
+
+    - name: Update remote RPC hosts
+      lineinfile:
+        line: "{{ boinc_rpc_hosts }}"
+        create: true
+        regexp: "^{{ boinc_rpc_hosts }}$"
+        dest: /etc/boinc-client/remote_hosts.cfg
+      notify: restart boinc-client
+
+    - name: Check project state for this host
+      command:
+        argv:
+          - /usr/bin/sudo
+          - -u
+          - boinc
+          - /usr/bin/boinccmd
+          - --get_project_status
+      register: project_status
+      changed_when: false
+
+    - name: Attach to project
+      command:
+        argv:
+          - /usr/bin/sudo
+          - -u
+          - boinc
+          - /usr/bin/boinccmd
+          - --project_attach
+          - "{{ boinc_project_url }}"
+          - "{{ boinc_weak_account_key }}"
+      when: not boinc_project_url in project_status.stdout
+
+
+    - name: Fake the memory
+      include_tasks: boinc_fakemem.yml
+        

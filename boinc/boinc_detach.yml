@@ -1,0 +1,32 @@
+---
+- name: Install and configure boinc client
+  hosts: wiis
+  gather_facts: false
+  become: true
+
+  vars_files:
+    vars/boinc_vars.yml
+
+  tasks:
+    - name: Check project state for this host
+      command:
+        argv:
+          - /usr/bin/sudo
+          - -u
+          - boinc
+          - /usr/bin/boinccmd
+          - --get_project_status
+      register: project_status
+      changed_when: false
+
+    - name: Detach project
+      command:
+        argv:
+          - /usr/bin/sudo
+          - -u
+          - boinc
+          - /usr/bin/boinccmd
+          - --project
+          - "{{ boinc_project_url }}" 
+          - detach
+      when: boinc_project_url in project_status.stdout
